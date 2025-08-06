@@ -1,0 +1,37 @@
+name: Fix Failed Slugs Batch
+
+on:
+  schedule:
+    - cron: "0 */4 * * *"  # Every 4 hours
+  workflow_dispatch:
+
+permissions:
+  contents: write  # ✅ Required to push output files to the repo
+
+jobs:
+  resolve-failed-slugs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 200
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run failed slugs resolver
+        run: python resolve_failed_slugs.py
+
+      - name: Commit outputs
+        run: |
+          git config --global user.email "github-actions@users.noreply.github.com"
+          git config --global user.name "GitHub Actions"
+          git add output_resolved/*.json failed_resolved_log.json resolved_progress.json
+          git commit -m "Add resolved batch output [$(date)]" || echo "No changes to commit"
+          git push
